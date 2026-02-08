@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { User, UserRole } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
   activeTab: string;
@@ -9,7 +10,8 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, user, onLogout }) => {
+  const navigate = useNavigate();
   const menuItems = [
     { id: 'dashboard', label: 'Painel', icon: 'fa-chart-line', roles: Object.values(UserRole) },
     { id: 'polls', label: 'Votações', icon: 'fa-square-check', roles: [UserRole.MORADOR, UserRole.SINDICO] },
@@ -38,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
         {visibleItems.map(item => (
           <button
             key={item.id}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => navigate(`/${item.id}`)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === item.id ? 'bg-brand-2 text-white shadow-lg shadow-black/20' : 'text-brand-4/60 hover:text-white hover:bg-white/10'
               }`}
           >

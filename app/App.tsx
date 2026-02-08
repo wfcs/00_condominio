@@ -1,9 +1,13 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { User, UserRole } from './types'; // Removed unused imports
+import { MOCK_CLIENTS, MOCK_POLLS, MOCK_ANNOUNCEMENTS, MOCK_TASKS } from './constants';
+import MainLayout from './components/Layout/MainLayout';
+import Login from './components/Login';
 
-import React, { useState, useEffect } from 'react';
-import { User, UserRole, CondoClient, Notification, Poll, Announcement, OperationalTask, Document, Charge } from './types';
-import { MOCK_USERS, MOCK_CLIENTS, MOCK_POLLS, MOCK_ANNOUNCEMENTS, MOCK_TASKS } from './constants';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
+// Components (imported directly or kept if they don't need props drilled from here anymore 
+// - ideally they should fetch their own data or use a DataContext, but for MVP refactor we'll keep props or adapt)
 import Dashboard from './components/Dashboard';
 import GatehouseView from './components/GatehouseView';
 import PollsView from './components/PollsView';
@@ -11,132 +15,102 @@ import BoardView from './components/BoardView';
 import OperationalView from './components/OperationalView';
 import ManagementView from './components/ManagementView';
 import DocumentsView from './components/DocumentsView';
-import Login from './components/Login';
+import { useState } from 'react';
+import BillingView from './components/BillingView';
 
-const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
-  const [clients, setClients] = useState<CondoClient[]>(MOCK_CLIENTS);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [polls, setPolls] = useState<Poll[]>(MOCK_POLLS);
-  const [announcements, setAnnouncements] = useState<Announcement[]>(MOCK_ANNOUNCEMENTS);
-  const [tasks, setTasks] = useState<OperationalTask[]>(MOCK_TASKS);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [charges, setCharges] = useState<Charge[]>([]);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('condo_theme') === 'dark';
-  });
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('condo_user');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-  }, []);
+// Wrapper to handle conditional rendering and data passing until we move data to Context/API
+const AppRoutes = () => {
+  const { currentUser, isAuthenticated, loginWithUser, users } = useAuth();
 
-  useEffect(() => {
-    localStorage.setItem('condo_theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
+  // STATE MANAGEMENT (Moved from App.tsx but still needed for passing props)
+  // In a real app, these would be in a DataContext or fetched in the pages.
+  // We keep them here to minimize changes to child components for now.
+  const [polls, setPolls] = useState(MOCK_POLLS);
+  const [announcements, setAnnouncements] = useState(MOCK_ANNOUNCEMENTS);
+  const [tasks, setTasks] = useState(MOCK_TASKS);
+  const [documents, setDocuments] = useState<any[]>([]); // Typed as any[] temporarily to match existing empty state
+  const [clients, setClients] = useState(MOCK_CLIENTS);
+  const [appUsers, setAppUsers] = useState(users); // Using users from context initially or managing local state
 
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-    localStorage.setItem('condo_user', JSON.stringify(user));
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('condo_user');
-    setActiveTab('dashboard');
-  };
-
-  // Fix: Added missing toggleTheme function
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+  if (!isAuthenticated) {
+    return <Login onLogin={loginWithUser} users={users} />;
+  }
 
   const isMasterAdmin = currentUser?.id === 'admin-fluxibi';
 
-  // Filtragem de Dados por Cliente (Isolamento RLS-like)
-  const filteredUsers = isMasterAdmin ? users : users.filter(u => u.clientId === currentUser?.clientId);
+  // DATA FILTERING
   const filteredPolls = isMasterAdmin ? polls : polls.filter(p => p.clientId === currentUser?.clientId);
   const filteredAnnouncements = isMasterAdmin ? announcements : announcements.filter(a => a.clientId === currentUser?.clientId);
   const filteredTasks = isMasterAdmin ? tasks : tasks.filter(t => t.clientId === currentUser?.clientId);
   const filteredDocuments = isMasterAdmin ? documents : documents.filter(d => d.clientId === currentUser?.clientId);
-  const filteredCharges = isMasterAdmin ? charges : charges.filter(c => c.clientId === currentUser?.clientId);
-  const filteredNotifications = notifications.filter(n =>
-    (isMasterAdmin) || (n.clientId === currentUser?.clientId && (n.unitId === currentUser?.unit || currentUser?.role !== UserRole.MORADOR))
-  );
-
-  const renderContent = () => {
-    if (!currentUser) return null;
-
-    switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard
-          user={currentUser}
-          polls={filteredPolls}
-          announcements={filteredAnnouncements}
-          tasks={filteredTasks}
-          notifications={filteredNotifications}
-          onNavigate={setActiveTab}
-        />;
-      case 'gatehouse':
-        return <GatehouseView
-          user={currentUser}
-          onSendNotification={(n) => setNotifications([{ ...n, clientId: currentUser.clientId }, ...notifications])}
-        />;
-      case 'polls':
-        return <PollsView user={currentUser} polls={filteredPolls} setPolls={setPolls} />;
-      case 'board':
-        return <BoardView user={currentUser} announcements={filteredAnnouncements} setAnnouncements={setAnnouncements} />;
-      case 'operational':
-        return <OperationalView user={currentUser} tasks={filteredTasks} setTasks={setTasks} />;
-      case 'documents':
-        return <DocumentsView user={currentUser} documents={filteredDocuments} setDocuments={setDocuments} />;
-      case 'billing':
-        return <div className="text-center p-12">
-          <i className="fa-solid fa-money-bill-wave text-6xl text-brand-3 mb-4"></i>
-          <h2 className="text-2xl font-bold text-brand-1 dark:text-white mb-2">Financeiro em Desenvolvimento</h2>
-          <p className="text-slate-500 dark:text-slate-400">Sistema de cobrança com Asaas será implementado em breve!</p>
-        </div>;
-      case 'management':
-        return <ManagementView
-          users={users}
-          setUsers={setUsers}
-          clients={clients}
-          setClients={setClients}
-          currentUser={currentUser}
-        />;
-      default: return null;
-    }
-  };
 
   return (
-    <div className={`${isDarkMode ? 'dark' : ''}`}>
-      <div className="min-h-screen flex flex-col md:flex-row bg-neutral-surface dark:bg-brand-1 transition-colors duration-300">
-        {!currentUser ? (
-          <Login onLogin={handleLogin} users={users} />
-        ) : (
-          <>
-            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} user={currentUser} onLogout={handleLogout} />
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-              <Navbar
-                user={currentUser}
-                isDarkMode={isDarkMode}
-                toggleTheme={toggleTheme}
-                notifications={filteredNotifications}
-              />
-              <main className="flex-1 overflow-y-auto p-4 md:p-8">
-                <div className="max-w-6xl mx-auto">
-                  {renderContent()}
-                </div>
-              </main>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+    <Routes>
+      <Route path="/" element={<MainLayout />}>
+        <Route index element={<Navigate to="/dashboard" replace />} />
+
+        <Route path="dashboard" element={
+          <Dashboard
+            user={currentUser!}
+            polls={filteredPolls}
+            announcements={filteredAnnouncements}
+            tasks={filteredTasks}
+            notifications={[]} // connect notifications later
+            onNavigate={() => { }} // Remove navigation prop dependency or mock it
+          />
+        } />
+
+        <Route path="gatehouse" element={
+          <GatehouseView
+            user={currentUser!}
+            onSendNotification={() => { }} // Implement later
+          />
+        } />
+
+        <Route path="polls" element={
+          <PollsView user={currentUser!} polls={filteredPolls} setPolls={setPolls} />
+        } />
+
+        <Route path="board" element={
+          <BoardView user={currentUser!} announcements={filteredAnnouncements} setAnnouncements={setAnnouncements} />
+        } />
+
+        <Route path="operational" element={
+          <OperationalView user={currentUser!} tasks={filteredTasks} setTasks={setTasks} />
+        } />
+
+        <Route path="documents" element={
+          <DocumentsView user={currentUser!} documents={filteredDocuments} setDocuments={setDocuments} />
+        } />
+
+        <Route path="billing" element={
+          <BillingView user={currentUser!} />
+        } />
+
+        <Route path="management" element={
+          <ManagementView
+            users={appUsers}
+            setUsers={setAppUsers}
+            clients={clients}
+            setClients={setClients}
+            currentUser={currentUser!}
+          />
+        } />
+      </Route>
+      {/* Catch all redirect */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 

@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, UserRole, Poll, Announcement, OperationalTask, Notification } from '../types';
 import GaugeChart from './GaugeChart';
 
@@ -9,11 +10,13 @@ interface DashboardProps {
   announcements: Announcement[];
   tasks: OperationalTask[];
   notifications: Notification[];
-  onNavigate: (tab: string) => void;
-  paymentAdherence?: number; // Percentual de pagamento (0-100)
+  onNavigate: (tab: string) => void; // Deprecated, keeping for type drift safety if needed, but we will ignore it.
+  paymentAdherence?: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, polls, announcements, tasks, notifications, onNavigate, paymentAdherence = 89.97 }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, polls, announcements, tasks, notifications, paymentAdherence = 89.97 }) => {
+  const navigate = useNavigate();
+
   const stats = [
     { label: 'Votações Ativas', value: polls.filter(p => p.active).length, icon: 'fa-check-to-slot', color: 'bg-brand-1 dark:bg-brand-2', tab: 'polls' },
     { label: 'Avisos no Mural', value: announcements.length, icon: 'fa-bullhorn', color: 'bg-brand-2 dark:bg-brand-3', tab: 'board' },
@@ -41,7 +44,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, polls, announcements, tasks
         {stats.map((s, i) => (
           <div
             key={i}
-            onClick={() => onNavigate(s.tab)}
+            onClick={() => navigate(s.tab)}
             className="bg-white dark:bg-white/5 p-6 rounded-3xl border border-slate-100 dark:border-white/10 shadow-sm flex items-center gap-5 hover:shadow-md transition-all cursor-pointer group"
           >
             <div className={`${s.color} w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-1/5 group-hover:scale-110 transition-transform`}>
@@ -63,7 +66,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, polls, announcements, tasks
               Comunicados Importantes
             </h3>
             <button
-              onClick={() => onNavigate('board')}
+              onClick={() => navigate('/board')}
               className="text-brand-2 dark:text-brand-3 text-xs font-bold uppercase tracking-widest hover:text-brand-1 transition-colors"
             >
               Ver Tudo
@@ -73,7 +76,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, polls, announcements, tasks
             {announcements.slice(0, 4).map(a => (
               <div
                 key={a.id}
-                onClick={() => onNavigate('board')}
+                onClick={() => navigate('/board')}
                 className="p-6 hover:bg-neutral-surface dark:hover:bg-white/5 transition-colors cursor-pointer group"
               >
                 <div className="flex items-start gap-5">
@@ -127,7 +130,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, polls, announcements, tasks
                     <h4 className="font-bold text-brand-1 dark:text-slate-200 text-sm">{p.title}</h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Enquete em aberto na rede.</p>
                     <button
-                      onClick={() => onNavigate('polls')}
+                      onClick={() => navigate('/polls')}
                       className="mt-4 w-full bg-brand-1 dark:bg-brand-3 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-brand-2 transition-all shadow-md shadow-brand-1/10"
                     >
                       Votar Agora
@@ -142,7 +145,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, polls, announcements, tasks
                 tasks.filter(t => t.status !== 'Resolvido').slice(0, 3).map(t => (
                   <div
                     key={t.id}
-                    onClick={() => onNavigate('operational')}
+                    onClick={() => navigate('/operational')}
                     className="flex items-center gap-4 p-4 border-l-4 border-brand-2 bg-neutral-surface dark:bg-brand-2/10 rounded-r-2xl cursor-pointer hover:bg-brand-5 dark:hover:bg-brand-2/20 transition-colors"
                   >
                     <div className="shrink-0 w-10 h-10 bg-white dark:bg-slate-800 shadow-sm rounded-xl flex items-center justify-center text-brand-1 dark:text-brand-4 border border-slate-100 dark:border-white/10">
@@ -161,7 +164,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, polls, announcements, tasks
               )
             )}
             <button
-              onClick={() => onNavigate(user.role === UserRole.MORADOR ? 'board' : 'operational')}
+              onClick={() => navigate(user.role === UserRole.MORADOR ? '/board' : '/operational')}
               className="w-full border-2 border-dashed border-slate-200 dark:border-white/10 text-slate-400 dark:text-brand-4 py-3 rounded-2xl text-xs font-bold hover:border-brand-3 hover:text-brand-3 transition-all"
             >
               Ver Histórico Completo
