@@ -1,8 +1,12 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-// Credenciais configuradas para o projeto ulvrwjkneomwwsvurxdf
-const SUPABASE_URL = 'https://ulvrwjkneomwwsvurxdf.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsdnJ3amtuZW9td3dzdnVyeGRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDY4NjMsImV4cCI6MjA4MzQ4Mjg2M30.jntu9YLXfUVTiQIcDRhmaLbnF66oBjwqeLSk4DODjj8';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Missing Supabase environment variables. Copy .env.example to .env.local and fill in your values.'
+  );
+}
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

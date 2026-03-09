@@ -19,14 +19,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, users }) => {
     e.preventDefault();
     setError('');
 
-    if (email === 'adm@fluxibi.com.br' && password === '@felipedovinho_2023') {
-      const adminUser = users.find(u => u.id === 'admin-fluxibi');
-      if (adminUser) {
-        onLogin(adminUser);
-        return;
-      }
-    }
-
     try {
       if (email && password) {
         const { data, error: sbError } = await supabase.auth.signInWithPassword({
